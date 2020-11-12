@@ -1,0 +1,6 @@
+bin/
+.idea/
+*.log
+.DS_Store
+.env
+emulation/
