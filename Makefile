@@ -1,6 +1,6 @@
-.PHONY: clean
+.PHONY: clean evictor
 
-bin/evictor:
+evictor:
 	go build -o bin/evictor ./cmd/evictor
 
 clean:
