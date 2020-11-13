@@ -26,7 +26,7 @@ Example:
 
 `--max-evicted <uint>` max number of tikv which could be evicted leader by this tool; optional; default: 10
 
-`--interval <duration>` interval for refresh latency metrics; optional; default: 15
+`--interval <duration>` interval for refresh latency metrics; optional; default: 15s
 
 `--threshold <duration>` a node which hold a latency longer than threshold will be treated as unhealthy; optional; default: 1s
 
