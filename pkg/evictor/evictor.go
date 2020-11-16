@@ -106,8 +106,8 @@ func (it *Evictor) findOutShouldEvict(nodes map[string]NodeHealth) ([]pdhelper.S
 	}
 	var shouldEvict []pdhelper.Store
 	for _, store := range allStores {
-		for key, _ := range nodes {
-			if strings.Contains(store.Address, key) {
+		for key, health := range nodes {
+			if health == Unhealthy && strings.Contains(store.Address, key) {
 				shouldEvict = append(shouldEvict, store)
 			}
 		}
@@ -115,7 +115,7 @@ func (it *Evictor) findOutShouldEvict(nodes map[string]NodeHealth) ([]pdhelper.S
 	return shouldEvict, nil
 }
 
-func (it *Evictor) findOutShouldRecover(healthMap map[string]NodeHealth, ) ([]pdhelper.Store, error) {
+func (it *Evictor) findOutShouldRecover(healthMap map[string]NodeHealth) ([]pdhelper.Store, error) {
 	evictedStore, err := it.getEvicted()
 	if err != nil {
 		return nil, err

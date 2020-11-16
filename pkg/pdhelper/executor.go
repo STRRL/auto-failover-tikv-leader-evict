@@ -106,5 +106,5 @@ func (it *Executor) ListEvictedStore() ([]Store, error) {
 			}
 		}
 	}
-	return stores, nil
+	return result, nil
 }
