@@ -61,6 +61,7 @@ func (it *Executor) ListStores() ([]Store, error) {
 	pdOutput := PdStore{}
 	err = json.Unmarshal(out, &pdOutput)
 	if err != nil {
+		log.L().With(zap.Error(err)).With(zap.String("output", string(out))).Warn("failed to parse output for pd-ctl store")
 		return nil, err
 	}
 	var result []Store
@@ -87,7 +88,7 @@ func (it *Executor) ListEvictedStore() ([]Store, error) {
 	var schedulerConfig PdSchedulerConfig
 	err = json.Unmarshal(out, &schedulerConfig)
 	if err != nil {
-		log.L().With(zap.Error(err)).Error("failed to parse output for pd-ctl scheduler config evict-leader-scheduler")
+		log.L().With(zap.Error(err)).With(zap.String("output", string(out))).Error("failed to parse output for pd-ctl scheduler config evict-leader-scheduler")
 		return nil, err
 	}
 

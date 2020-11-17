@@ -43,7 +43,7 @@ func (it *Evictor) Run(ctx context.Context) error {
 
 	for {
 		if err := it.loopForever(ctx); err != nil {
-			log.L().With(zap.Error(err)).Error("failed to evict tikv leader")
+			log.L().With(zap.Error(err)).Error("failed to execute loop")
 		}
 
 		select {
@@ -71,7 +71,7 @@ func (it *Evictor) loopForever(ctx context.Context) error {
 
 	// evict
 	if shouldEvict, err := it.findOutShouldEvict(healthMap); err != nil {
-		log.L().With(zap.Error(err)).Error("failed to all stores; it will not evict any nodes at this time")
+		log.L().With(zap.Error(err)).Error("failed to find out should evicted stores; it will not evict any nodes at this time")
 	} else {
 		for _, store := range shouldEvict {
 			err := it.pd.AddEvictScheduler(store.Id)
@@ -85,7 +85,7 @@ func (it *Evictor) loopForever(ctx context.Context) error {
 
 	// recover
 	if shouldRecover, err := it.findOutShouldRecover(healthMap); err != nil {
-		log.L().With(zap.Error(err)).Error("failed to fetch evicted node; it will not recover any tikv nodes at this time")
+		log.L().With(zap.Error(err)).Error("failed to find out should recovered stores; it will not recover any tikv nodes at this time")
 	} else {
 		for _, store := range shouldRecover {
 			err := it.pd.RemoveEvictScheduler(store.Id)
@@ -104,24 +104,48 @@ func (it *Evictor) findOutShouldEvict(nodes map[string]NodeHealth) ([]pdhelper.S
 	if err != nil {
 		return nil, err
 	}
-	var shouldEvict []pdhelper.Store
-	for _, store := range allStores {
-		for key, health := range nodes {
-			if health == Unhealthy && strings.Contains(store.Address, key) {
-				shouldEvict = append(shouldEvict, store)
+	var shouldEvicts []pdhelper.Store
+	for key, health := range nodes {
+		if health != Unhealthy {
+			continue
+		}
+		for _, store := range allStores {
+			if strings.Contains(store.Address, key) {
+				shouldEvicts = append(shouldEvicts, store)
 			}
 		}
 	}
-	return shouldEvict, nil
+
+	evictedStores, err := it.pd.ListEvictedStore()
+	var result []pdhelper.Store
+
+	for _, shouldEvictItem := range shouldEvicts {
+		newToEvict := true
+		for _, evictedStore := range evictedStores {
+			if shouldEvictItem.Id == evictedStore.Id {
+				newToEvict = false
+				break
+			}
+		}
+		if newToEvict {
+			result = append(result, shouldEvictItem)
+		}
+	}
+	if len(result) > 0 {
+		log.L().With(zap.Any("already-evicted", evictedStores)).With(zap.Any("new-to-evicted", result)).Info("fetch new stores to evicted")
+	} else {
+		log.L().With(zap.Any("already-evicted", evictedStores)).With(zap.Any("new-to-evicted", result)).Debug("fetch new stores to evicted")
+	}
+	return result, nil
 }
 
 func (it *Evictor) findOutShouldRecover(healthMap map[string]NodeHealth) ([]pdhelper.Store, error) {
-	evictedStore, err := it.getEvicted()
+	evictedStores, err := it.getEvicted()
 	if err != nil {
 		return nil, err
 	}
-	var shouldRecover []pdhelper.Store
-	for _, store := range evictedStore {
+	var newToRecover []pdhelper.Store
+	for _, store := range evictedStores {
 		var ipAddress string
 		if strings.Contains(store.Address, ":") {
 			ipAddress = store.Address[:strings.LastIndex(store.Address, ":")]
@@ -129,10 +153,15 @@ func (it *Evictor) findOutShouldRecover(healthMap map[string]NodeHealth) ([]pdhe
 			ipAddress = store.Address
 		}
 		if value, ok := healthMap[ipAddress]; ok && value == Healthy {
-			shouldRecover = append(shouldRecover, store)
+			newToRecover = append(newToRecover, store)
 		}
 	}
-	return shouldRecover, nil
+	if len(newToRecover) > 0 {
+		log.L().With(zap.Any("already-evicted", evictedStores)).With(zap.Any("new-to-recover", newToRecover)).Info("new stores to recover")
+	} else {
+		log.L().With(zap.Any("already-evicted", evictedStores)).With(zap.Any("new-to-recover", newToRecover)).Debug("new stores to recover")
+	}
+	return newToRecover, nil
 }
 
 func (it *Evictor) generateNodeHealthMap(metrics map[promhelper.Link]promhelper.TimeSeries) map[string]NodeHealth {
