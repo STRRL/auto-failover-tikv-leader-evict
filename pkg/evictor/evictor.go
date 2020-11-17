@@ -5,6 +5,7 @@ import (
 	"auto-failover-tikv-leader-evict/pkg/pdhelper"
 	"auto-failover-tikv-leader-evict/pkg/promhelper"
 	"context"
+	"fmt"
 	"go.uber.org/zap"
 	"strings"
 	"time"
@@ -117,6 +118,13 @@ func (it *Evictor) findOutShouldEvict(nodes map[string]NodeHealth) ([]pdhelper.S
 	}
 
 	evictedStores, err := it.pd.ListEvictedStore()
+
+	// check max-evicted
+	if uint(len(evictedStores)) >= it.config.MaxEvicted {
+		log.L().With(zap.Uint("max-evicted", it.config.MaxEvicted)).With(zap.Any("already-evicted", evictedStores)).Warn("max-evicted exceed")
+		return nil, fmt.Errorf("max-evicted exceed")
+	}
+
 	var result []pdhelper.Store
 
 	for _, shouldEvictItem := range shouldEvicts {
