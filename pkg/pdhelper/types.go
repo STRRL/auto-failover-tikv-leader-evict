@@ -1,5 +1,12 @@
 package pdhelper
 
+import (
+	"auto-failover-tikv-leader-evict/pkg/log"
+	"go.uber.org/zap"
+	"strconv"
+	"strings"
+)
+
 type PdStore struct {
 	Count  int         `json:"count"`
 	Stores []StoreItem `json:"stores"`
@@ -14,14 +21,21 @@ type Store struct {
 	Address string `json:"address"`
 }
 
-type PdSchedulerConfig struct {
-	StoreIdRanges map[uint][]interface{} `json:"store-id-ranges"`
-}
+type PdSchedulerShow []string
 
-func (it *PdSchedulerConfig) FetchStoreIds() []uint {
+func (it *PdSchedulerShow) FetchStoreIds() []uint {
 	var result []uint
-	for k, _ := range it.StoreIdRanges {
-		result = append(result, k)
+	for _, item := range *it {
+		if strings.Contains(item, evictLeaderScheduler) {
+			parsed, err := strconv.ParseUint(item[strings.LastIndex(item, "-")+1:], 10, 32)
+			if err != nil {
+				log.L().With(zap.Any("output", *it)).Error("failed to parse store id from pd-ctl scheduler show")
+				continue
+			}
+			evictedStoreId := uint(parsed)
+			result = append(result, evictedStoreId)
+		}
 	}
+
 	return result
 }
