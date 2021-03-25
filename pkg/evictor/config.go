@@ -2,10 +2,14 @@ package evictor
 
 import "time"
 
+const VersionV3 string = "v3"
+const VersionV4 string = "v4"
+
 type Config struct {
 	PrometheusAddress string
 	PdAddress         string
 	MaxEvicted        uint
+	PdVersion         string
 	Interval          time.Duration
 	Threshold         time.Duration
 	PendingForEvict   time.Duration

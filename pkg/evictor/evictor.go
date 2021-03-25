@@ -21,7 +21,16 @@ const (
 
 func NewEvictor(config Config) (*Evictor, error) {
 	queryClient, err := promhelper.NewQueryClient(config.PrometheusAddress)
-	pd := pdhelper.NewExecutorV3(config.PdAddress)
+	var pd pdhelper.Executor
+	log.L().Info(fmt.Sprintf("evictor is configured with pd %s", config.PdVersion))
+	if config.PdVersion == VersionV3 {
+		pd = pdhelper.NewExecutorV3(config.PdAddress)
+	} else if config.PdVersion == VersionV4 {
+		pd = pdhelper.NewExecutorV4(config.PdAddress)
+	} else {
+		return nil, fmt.Errorf("unsupported pd version %s", config.PdVersion)
+	}
+
 	if err != nil {
 		return nil, err
 	}

@@ -33,6 +33,7 @@ func NewRootCmd() *cobra.Command {
 	rootCmd.MarkFlagRequired("prometheus")
 	rootCmd.Flags().StringVar(&config.PdAddress, "pd", "", "address of pd")
 	rootCmd.MarkFlagRequired("pd")
+	rootCmd.Flags().StringVar(&config.PdVersion,"pd-version","v3","pd version; available values: v3, v4")
 	rootCmd.Flags().UintVar(&config.MaxEvicted, "max-evicted", 10, "max number of tikv which could be evicted leader by this tool")
 	rootCmd.Flags().DurationVar(&config.Interval, "interval", defaultInterval, "interval for refresh latency metrics")
 	rootCmd.Flags().DurationVar(&config.Threshold, "threshold", time.Second, "a node which hold a latency longer than threshold will be treated as unhealthy")
@@ -50,10 +51,12 @@ func run(cmd *cobra.Command, args []string) {
 	instance, err := evictor.NewEvictor(config)
 	if err != nil {
 		log.L().With(zap.Error(err)).Error("failed to initialize evictor")
+		return
 	}
 	err = instance.Run(makeContext())
 	if err != nil {
 		log.L().With(zap.Error(err)).Error("failed to execute evictor")
+		return
 	}
 }
 
