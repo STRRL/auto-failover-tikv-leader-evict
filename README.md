@@ -48,6 +48,8 @@ WantedBy=multi-user.target
 
 `--pd <string>` address of pd; required;
 
+`--pd-version <string>` version of TiDB cluster; default: `v3`; available values: `v3`, `v4`;
+
 `--max-evicted <uint>` max number of tikv which could be evicted leader by this tool; optional; default: 10
 
 `--interval <duration>` interval for refresh latency metrics; optional; default: 15s
