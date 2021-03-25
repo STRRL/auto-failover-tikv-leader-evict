@@ -21,7 +21,7 @@ const (
 
 func NewEvictor(config Config) (*Evictor, error) {
 	queryClient, err := promhelper.NewQueryClient(config.PrometheusAddress)
-	pd := pdhelper.NewExecutor(config.PdAddress)
+	pd := pdhelper.NewExecutorV3(config.PdAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +34,7 @@ func NewEvictor(config Config) (*Evictor, error) {
 
 type Evictor struct {
 	config Config
-	pd     *pdhelper.Executor
+	pd     pdhelper.Executor
 	prom   *promhelper.QueryClient
 }
 
