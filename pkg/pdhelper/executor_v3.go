@@ -73,7 +73,7 @@ func (it *ExecutorV3) ListStores() ([]Store, error) {
 func (it *ExecutorV3) ListEvictedStore() ([]Store, error) {
 	out, err := exec.Command("pd-ctl", "-u", it.PdAddr, "scheduler", "show").CombinedOutput()
 	if err != nil {
-		log.L().With(zap.String("out", string(out))).Error("failed to execute pd-ctl store")
+		log.L().With(zap.String("out", string(out))).Error("failed to execute pd-ctl scheduler show")
 		return nil, err
 	}
 

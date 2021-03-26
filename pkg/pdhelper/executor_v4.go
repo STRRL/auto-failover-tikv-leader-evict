@@ -70,20 +70,20 @@ func (it *ExecutorV4) ListStores() ([]Store, error) {
 }
 
 func (it *ExecutorV4) ListEvictedStore() ([]Store, error) {
-	out, err := exec.Command("pd-ctl", "-u", it.PdAddr, "scheduler", "show").CombinedOutput()
+	out, err := exec.Command("pd-ctl", "-u", it.PdAddr, "scheduler", "config", evictLeaderScheduler).CombinedOutput()
 	if err != nil {
-		log.L().With(zap.String("out", string(out))).Error("failed to execute pd-ctl store")
+		log.L().With(zap.String("out", string(out))).Error("failed to execute pd-ctl scheduler config evict-leader-scheduler")
 		return nil, err
 	}
 
-	log.L().With(zap.String("output", string(out))).Debug("pd-ctl scheduler show")
+	log.L().With(zap.String("output", string(out))).Debug("pd-ctl scheduler config evict-leader-scheduler")
 
 	// if there is no scheduler called "evict-leader-scheduler", pd-ctl will print something like "[404] 404 page not found"
 	if strings.Contains(string(out), "404") {
 		return nil, nil
 	}
 
-	var schedulers PdSchedulerShow
+	var schedulers PdSchedulerConfig
 	err = json.Unmarshal(out, &schedulers)
 	if err != nil {
 		log.L().With(zap.Error(err)).With(zap.String("output", string(out))).Error("failed to parse output for pd-ctl scheduler config evict-leader-scheduler")
