@@ -182,27 +182,56 @@ func (it *Evictor) findOutShouldRecover(healthMap map[string]NodeHealth) ([]pdhe
 }
 
 func (it *Evictor) generateNodeHealthMap(metrics map[promhelper.Link]promhelper.TimeSeries) map[string]NodeHealth {
-	nodes := make(map[string]NodeHealth)
-
+	var allNodes []string
+	for link := range metrics {
+		if !contains(allNodes, link.From) {
+			allNodes = append(allNodes, link.From)
+		}
+		if !contains(allNodes, link.To) {
+			allNodes = append(allNodes, link.To)
+		}
+	}
+	var nodesWithBadLinks = make(map[string][]promhelper.Link)
 	for link, ts := range metrics {
 		if ts.LatencyLargerThanThresholdFor(it.config.Threshold, it.config.PendingForEvict) {
 			// As any one link performs as unhealthy, this node treads unhealthy.
 			// It could overwrite existed Healthy and Unstable.
-			nodes[link.To] = Unhealthy
+			nodesWithBadLinks[link.From] = append(nodesWithBadLinks[link.From], link)
+			log.L().Debug("bad link", zap.String("from", link.From), zap.String("to", link.To))
 		} else if ts.LatencySmallerThanThresholdFor(it.config.Threshold, it.config.PendingForRecover) {
-			if _, ok := nodes[link.To]; !ok {
-				nodes[link.To] = Healthy
-			}
+			continue
 		} else {
-			// Unstable could only overwrite Healthy.
-			if value, ok := nodes[link.To]; !ok || value == Healthy {
-				nodes[link.To] = Unstable
-			}
+			log.L().Debug("unstable link", zap.String("from", link.From), zap.String("to", link.To))
 		}
 	}
-	return nodes
+	result := make(map[string]NodeHealth)
+	for _, node := range allNodes {
+		if badLinks, ok := nodesWithBadLinks[node]; ok {
+			badLinkNum := uint(len(badLinks))
+			if badLinkNum == 0 {
+				result[node] = Healthy
+			} else if badLinkNum < it.config.BadLinkFuseThreshold {
+				result[node] = Unstable
+			} else {
+				result[node] = Unhealthy
+			}
+		} else {
+			log.L().Warn("there are no metrics about node, treated as Healthy", zap.String("node", node))
+			result[node] = Healthy
+		}
+	}
+	return result
 }
 
 func (it *Evictor) getEvicted() ([]pdhelper.Store, error) {
 	return it.pd.ListEvictedStore()
+}
+
+func contains(array []string, target string) bool {
+	for _, item := range array {
+		if item == target {
+			return true
+		}
+	}
+	return false
 }

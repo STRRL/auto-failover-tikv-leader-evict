@@ -50,11 +50,13 @@ WantedBy=multi-user.target
 
 `--pd-version <string>` version of TiDB cluster; default: `v3`; available values: `v3`, `v4`;
 
-`--max-evicted <uint>` max number of tikv which could be evicted leader by this tool; optional; default: 10
+`--max-evicted <uint>` max number of tikv which could be evicted leader by this tool; optional; default: 2
 
 `--interval <duration>` interval for refresh latency metrics; optional; default: 15s
 
-`--threshold <duration>` a node which hold a latency longer than threshold will be treated as unhealthy; optional; default: 1s
+`--threshold <duration>` a link which hold a latency longer than threshold will be treated as bad link; optional; default: 1s
+
+`--bad-link-fuse-threshold`a node which node the threshold of bad link bigger than that will be treated as unhealthy; default 2
 
 `--pending-for-evict <duration>` an unhealthy tikv node will be evicted after this duration; optional; default: 1m
 

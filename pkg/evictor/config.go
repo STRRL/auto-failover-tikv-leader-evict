@@ -6,14 +6,15 @@ const VersionV3 string = "v3"
 const VersionV4 string = "v4"
 
 type Config struct {
-	PrometheusAddress string
-	PdAddress         string
-	MaxEvicted        uint
-	PdVersion         string
-	Interval          time.Duration
-	Threshold         time.Duration
-	PendingForEvict   time.Duration
-	PendingForRecover time.Duration
+	PrometheusAddress    string
+	PdAddress            string
+	MaxEvicted           uint
+	PdVersion            string
+	Interval             time.Duration
+	Threshold            time.Duration
+	BadLinkFuseThreshold uint
+	PendingForEvict      time.Duration
+	PendingForRecover    time.Duration
 }
 
 func (it Config) RequiredMaxTimeRange() time.Duration {
