@@ -6,6 +6,7 @@ import (
 	"github.com/prometheus/client_golang/api"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
+	"strings"
 	"time"
 )
 
@@ -46,8 +47,12 @@ func (it *QueryClient) FetchNodeLatencyMetrics(ctx context.Context, duration tim
 	case model.ValMatrix:
 		result := make(map[Link]TimeSeries)
 		for _, matrix := range values.(model.Matrix) {
+			instance := string(matrix.Metric[LabelInstance])
+			if strings.Contains(instance, ":") {
+				instance = instance[:strings.LastIndex(instance, ":")]
+			}
 			result[Link{
-				From: string(matrix.Metric[LabelInstance]),
+				From: instance,
 				To:   string(matrix.Metric[LabelPing]),
 			}] = parseTimeSeries(matrix.Values)
 		}
