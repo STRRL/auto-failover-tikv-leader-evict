@@ -209,14 +209,24 @@ func (it *Evictor) generateNodeHealthMap(metrics map[promhelper.Link]promhelper.
 		if badLinks, ok := nodesWithBadLinks[node]; ok {
 			badLinkNum := uint(len(badLinks))
 			if badLinkNum == 0 {
+				log.L().Debug("bad link about node not exist, treated as Healthy",
+					zap.String("node", node))
 				result[node] = Healthy
 			} else if badLinkNum < it.config.BadLinkFuseThreshold {
+				log.L().Debug("bad link about node exist, but not over the threshold, treated as Unstable",
+					zap.String("node", node),
+					zap.Uint("bad link count", badLinkNum),
+					zap.Any("bad links", badLinks))
 				result[node] = Unstable
 			} else {
+				log.L().Debug("bad link about node has been over the threshold",
+					zap.String("node", node),
+					zap.Uint("bad link count", badLinkNum),
+					zap.Any("bad links", badLinks))
 				result[node] = Unhealthy
 			}
 		} else {
-			log.L().Warn("there are no metrics about node, treated as Healthy", zap.String("node", node))
+			log.L().Debug("there are no bad link about node, treated as Healthy", zap.String("node", node))
 			result[node] = Healthy
 		}
 	}
